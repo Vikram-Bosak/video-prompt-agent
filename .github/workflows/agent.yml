@@ -2,7 +2,7 @@ name: Video Prompt Agent
 
 on:
   schedule:
-    - cron: "0 * * * *"  # Every hour - 24/7 Automation
+    - cron: "0 */3 * * *"  # Every 3 hours - 24/7 Automation
   workflow_dispatch:       # Manual trigger
   push:
     branches:
