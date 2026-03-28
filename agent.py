@@ -55,9 +55,10 @@ def get_gcp_credentials():
     logger.info("Getting GCP credentials...")
     sa_json = os.environ.get("SERVICE_ACCOUNT_JSON")
     logger.info(
-        f"ENV SERVICE_ACCOUNT_JSON present: {bool(sa_json)}, length: {len(sa_json) if sa_json else 0}"
+        f"SERVICE_ACCOUNT_JSON from env, length: {len(sa_json) if sa_json else 0}"
     )
 
+    # If empty, try reading from .env file
     if not sa_json or sa_json == "":
         env_path = os.path.join(os.path.dirname(__file__), "api_keys", ".env")
         logger.info(
@@ -68,19 +69,19 @@ def get_gcp_credentials():
                 for line in f:
                     if line.startswith("SERVICE_ACCOUNT_JSON="):
                         sa_json = line.split("=", 1)[1].strip()
-                        logger.info(f"Found in .env, length: {len(sa_json)}")
-                        # Decode from base64
-                        try:
-                            sa_json = base64.b64decode(sa_json.encode()).decode()
-                            logger.info(
-                                f"Decoded from base64, new length: {len(sa_json)}"
-                            )
-                        except Exception as e:
-                            logger.info(f"Base64 decode failed: {e}")
+                        logger.info(f"Found in .env file, length: {len(sa_json)}")
                         break
 
     if not sa_json or sa_json == "":
         raise ValueError("SERVICE_ACCOUNT_JSON not set")
+
+    # Try to decode from base64 (our .env storage format)
+    original_len = len(sa_json)
+    try:
+        sa_json = base64.b64decode(sa_json.encode()).decode()
+        logger.info(f"Decoded from base64: {original_len} -> {len(sa_json)}")
+    except Exception as e:
+        logger.info(f"Base64 decode failed (may already be plain JSON): {e}")
 
     logger.info(f"About to parse JSON, length: {len(sa_json)}")
     info = json.loads(sa_json)
