@@ -3,6 +3,7 @@
 
 import os
 import json
+import base64
 
 
 def create_env():
@@ -17,6 +18,18 @@ def create_env():
     }
 
     os.makedirs("api_keys", exist_ok=True)
+
+    # Decode base64 if needed
+    sa_json = secrets.get("SERVICE_ACCOUNT_JSON", "")
+    if sa_json:
+        try:
+            # Try to decode if it's base64 encoded
+            secrets["SERVICE_ACCOUNT_JSON"] = base64.b64decode(
+                sa_json.encode()
+            ).decode()
+        except Exception as e:
+            print(f"Base64 decode failed: {e}, trying as plain text")
+            # Keep as-is if decode fails
 
     with open("api_keys/.env", "w") as f:
         for key, value in secrets.items():
@@ -33,6 +46,7 @@ def create_env():
                     print(f"Has private key: {'private_key' in data}")
                 except Exception as e:
                     print(f"JSON Error: {e}")
+                    print(f"First 100 chars: {json_str[:100]}")
                 break
 
     print("Created api_keys/.env")
