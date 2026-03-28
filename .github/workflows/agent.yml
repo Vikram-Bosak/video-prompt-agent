@@ -6,9 +6,31 @@ on:
   workflow_dispatch:       # Manual trigger
   repository_dispatch:
     types: [run-agent]     # For cron-job.org triggers
-  push:
-    branches:
-      - main
+    inputs:
+      NVIDIA_API_KEY:
+        description: 'NVIDIA API Key'
+        required: false
+        default: ''
+      GOOGLE_SHEET_ID:
+        description: 'Google Sheet ID'
+        required: false
+        default: ''
+      GOOGLE_DRIVE_FOLDER_ID:
+        description: 'Google Drive Folder ID'
+        required: false
+        default: ''
+      TELEGRAM_BOT_TOKEN:
+        description: 'Telegram Bot Token'
+        required: false
+        default: ''
+      TELEGRAM_CHAT_ID:
+        description: 'Telegram Chat ID'
+        required: false
+        default: ''
+      SERVICE_ACCOUNT_JSON:
+        description: 'Google Service Account JSON'
+        required: false
+        default: ''
 
 jobs:
   generate:
@@ -28,14 +50,33 @@ jobs:
           pip install -r requirements.txt
           pip install python-dotenv
       
-      - name: Run Agent
+      - name: Create .env file from inputs (for cron-job.org trigger)
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          mkdir -p api_keys
+          cat > api_keys/.env << EOF
+          NVIDIA_API_KEY=${{ github.event.client_payload.NVIDIA_API_KEY }}
+          GOOGLE_SHEET_ID=${{ github.event.client_payload.GOOGLE_SHEET_ID }}
+          GOOGLE_DRIVE_FOLDER_ID=${{ github.event.client_payload.GOOGLE_DRIVE_FOLDER_ID }}
+          TELEGRAM_BOT_TOKEN=${{ github.event.client_payload.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID=${{ github.event.client_payload.TELEGRAM_CHAT_ID }}
+          SERVICE_ACCOUNT_JSON=${{ github.event.client_payload.SERVICE_ACCOUNT_JSON }}
+          EOF
+      
+      - name: Run Agent (with GitHub secrets)
+        if: github.event_name != 'repository_dispatch'
         env:
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || env.NVIDIA_API_KEY }}
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID || env.GOOGLE_SHEET_ID }}
-          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID || env.GOOGLE_DRIVE_FOLDER_ID }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || env.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID || env.TELEGRAM_CHAT_ID }}
-          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON || env.SERVICE_ACCOUNT_JSON }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+        run: |
+          python agent.py
+      
+      - name: Run Agent (with env file from cron-job.org)
+        if: github.event_name == 'repository_dispatch'
         run: |
           python agent.py
       
