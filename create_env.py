@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Create .env file from environment variables for GitHub Actions."""
+
+import os
+import json
+
+
+def create_env():
+    """Create api_keys/.env file from environment variables."""
+    secrets = {
+        "NVIDIA_API_KEY": os.environ.get("NVIDIA_API_KEY", ""),
+        "GOOGLE_SHEET_ID": os.environ.get("GOOGLE_SHEET_ID", ""),
+        "GOOGLE_DRIVE_FOLDER_ID": os.environ.get("GOOGLE_DRIVE_FOLDER_ID", ""),
+        "TELEGRAM_BOT_TOKEN": os.environ.get("TELEGRAM_BOT_TOKEN", ""),
+        "TELEGRAM_CHAT_ID": os.environ.get("TELEGRAM_CHAT_ID", ""),
+        "SERVICE_ACCOUNT_JSON": os.environ.get("SERVICE_ACCOUNT_JSON", ""),
+    }
+
+    os.makedirs("api_keys", exist_ok=True)
+
+    with open("api_keys/.env", "w") as f:
+        for key, value in secrets.items():
+            f.write(f"{key}={value}\n")
+
+    # Verify SERVICE_ACCOUNT_JSON
+    with open("api_keys/.env") as f:
+        for line in f:
+            if line.startswith("SERVICE_ACCOUNT_JSON="):
+                json_str = line.split("=", 1)[1].strip()
+                try:
+                    data = json.loads(json_str)
+                    print(f"Valid! Project: {data.get('project_id')}")
+                    print(f"Has private key: {'private_key' in data}")
+                except Exception as e:
+                    print(f"JSON Error: {e}")
+                break
+
+    print("Created api_keys/.env")
+
+
+if __name__ == "__main__":
+    create_env()
