@@ -51,7 +51,18 @@ Output format (exactly):
 
 def get_gcp_credentials():
     """Get GCP credentials from service account JSON."""
+    # First try environment variable, then fall back to .env file
     sa_json = os.environ.get("SERVICE_ACCOUNT_JSON")
+
+    if not sa_json:
+        # Read from .env file directly
+        env_path = os.path.join(os.path.dirname(__file__), "api_keys", ".env")
+        with open(env_path) as f:
+            for line in f:
+                if line.startswith("SERVICE_ACCOUNT_JSON="):
+                    sa_json = line.split("=", 1)[1].strip()
+                    break
+
     if not sa_json:
         raise ValueError("SERVICE_ACCOUNT_JSON not set")
 
