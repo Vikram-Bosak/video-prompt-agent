@@ -51,7 +51,11 @@ Output format (exactly):
 
 def get_gcp_credentials():
     """Get GCP credentials from service account JSON."""
+    logger.info("Getting GCP credentials...")
     sa_json = os.environ.get("SERVICE_ACCOUNT_JSON")
+    logger.info(
+        f"ENV SERVICE_ACCOUNT_JSON present: {bool(sa_json)}, length: {len(sa_json) if sa_json else 0}"
+    )
 
     if not sa_json or sa_json == "":
         env_path = os.path.join(os.path.dirname(__file__), "api_keys", ".env")
@@ -75,6 +79,7 @@ def get_gcp_credentials():
     if not sa_json or sa_json == "":
         raise ValueError("SERVICE_ACCOUNT_JSON not set")
 
+    logger.info(f"About to parse JSON, length: {len(sa_json)}")
     info = json.loads(sa_json)
     return service_account.Credentials.from_service_account_info(
         info, scopes=SHEET_SCOPES + DRIVE_SCOPES
